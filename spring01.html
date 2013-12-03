@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	<title>spring</title>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script>
+var c;
+var ctx;
+		var pos=200;
+		var inertia=0;
+		var friction=.1;
+		var yOff=147;
+		var xOff=256
+		var spring_constant = .3;
+		var mainTimer;
+		
+	function SetupAnimVP(){
+		c=document.getElementById("myCanvas");
+		ctx=c.getContext("2d");
+		ctx.fillStyle="#FFFF00";
+
+
+
+		ctx.moveTo(0,150);
+		ctx.lineTo(512,150);
+		ctx.stroke();
+
+		// arc(x,y,r,start,stop)
+		/*
+		ctx.beginPath();
+		ctx.arc(95,150,10,0,2*Math.PI);
+		ctx.fillStyle="#FF0000";
+		ctx.fill();
+		*/
+		mainTimer = window.setInterval(Sproing,40);
+		$('#stopbutton').click(function() {
+			clearInterval(mainTimer);
+		});
+}
+
+
+		function Sproing(){
+			if (Math.random()<.03){
+				inertia = inertia + ((.5-Math.random())*200);
+			
+			}
+			var spring_force = -(spring_constant * pos);
+			var moment = (inertia + spring_force) *(1 - friction);
+			inertia = moment;
+			pos = pos + inertia;
+			if (pos>256){
+				// alert ('wrap right');
+				pos = -(pos-256);
+				inertia = -inertia;
+			} else if (pos<-256) {
+				// alert ('wrap left');
+				pos = 256+ pos;
+				inertia = -inertia;
+			}
+			
+			$('#cc').css({top:yOff +'px', left:(pos+256) +'px'});
+			// $('#framecount').html( pos);
+		}
+		
+	</script> 
+
+	<style>
+		#cc {
+			position: absolute;
+		}
+	</style>
+</head>
+<body>
+
+<canvas id="myCanvas" width="512" height="300"
+style="border:1px solid #000000;">
+</canvas> 
+<br />
+<span id="framecount">0</span>
+<img id="cc" src="circle.png" />
+<br />
+<a href="#" id="stopbutton">stop</a>
+<script>
+	$( document ).ready(function() {
+		SetupAnimVP();
+		$('#framecount').html('0');
+	});
+</script>
+</body>
+</html>
