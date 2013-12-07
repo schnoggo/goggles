@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	<title>spring</title>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script>
+var c;
+var ctx;
+		var pos=400;
+		var inertia=0;
+		var friction=11;
+		var yOff=147;
+		var spring_constant = 36;
+		var mainTimer;
+		
+		var scale = 4;
+		var system_size = 800; // + and -
+		var frame_count = 0;
+		
+/* 
+	This second javascript version starts the conversion to integer math
+	The width of the solution set is 1600: -800 to +800
+	
+*/
+		
+	function Arduino_Setup(){
+		c=document.getElementById("myCanvas");
+		ctx=c.getContext("2d");
+		ctx.fillStyle="#FFFF00";
+
+		ctx.moveTo(0,150);
+		ctx.lineTo(system_size*2,150);
+		ctx.stroke();
+
+
+		mainTimer = window.setInterval(Arduino_Loop,50);
+		$('#stopbutton').click(function() {
+			clearInterval(mainTimer);
+		});
+		
+		$('#kickbutton').click(function() {
+			inertia = inertia + Math.floor((system_size+system_size)*Math.random()-system_size); //impulse	
+			$('#impulse_value').html( inertia);
+		});
+		
+}
+
+
+		function Arduino_Loop(){
+
+			var spring_force = Math.floor(-((pos * spring_constant) /100));
+			var moment = Math.floor((inertia + spring_force) * (100 - friction) /100);
+			// (inertia + spring_force) *(1 - friction);
+			inertia = moment;
+			pos = pos + inertia;
+			if (pos>system_size){
+				// alert ('wrap right');
+				pos = -(pos-system_size);
+				inertia = -inertia;
+			} else if (pos<-system_size) {
+				// alert ('wrap left');
+				pos = system_size+ pos;
+				inertia = -inertia;
+			}
+			
+			$('#cc').css({top:yOff +'px', left:(pos/2+system_size/2) +'px'});
+			$('#xposition').html( Math.floor(pos));
+			$('#vector').html( inertia);
+			$('#framecount').html( frame_count);
+			frame_count++;
+		}
+		
+	</script> 
+
+	<style>
+		#cc {
+			position: absolute;
+		}
+	</style>
+</head>
+<body>
+
+<canvas id="myCanvas" width="800" height="300"
+style="border:1px solid #000000;">
+</canvas> 
+<br />
+Frame:<span id="framecount">0</span>
+<br />
+Position:<span id="xposition">0</span>
+<br />
+Inertia:<span id="vector">0</span>
+<br />
+Impulse: <span id="impulse_value">0</span>
+<img id="cc" src="circle.png" />
+<br />
+
+
+<a href="#" id="stopbutton">stop</a> &nbsp;&nbsp;&nbsp;&nbsp; <a href="#" id="kickbutton">kick it!</a>
+<script>
+	$( document ).ready(function() {
+		Arduino_Setup();
+		$('#framecount').html('0');
+	});
+</script>
+</body>
+</html>
