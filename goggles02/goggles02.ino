@@ -8,7 +8,7 @@
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(32, PIN);
 
-uint8_t  mode   = 2, // Current animation effect
+uint8_t  mode   = 3, // Current animation effect
          leftOff = 7, // Position of spinny eyes
          rightOff = 2,
          pos = 8;
@@ -57,8 +57,8 @@ void loop() {
     for(i=0; i<16; i++) {
       uint32_t c = 0; // turn off non-selected pixels
       if(((pos + i) & 7) < 2) c = color; // 4 pixels on...
-      pixels.setPixelColor(  (i+leftOff) % 16, c); // First eye
-      pixels.setPixelColor(32 - ((i+rightOff) % 16 ), c); // Second eye (flipped)
+      pixels.setPixelColor(  NormalizeRingPos(i+leftOff), c); // First eye
+      pixels.setPixelColor(32 - NormalizeRingPos(i+rightOff)  , c); // Second eye (flipped)
     }
     pixels.show();
     pos = pos++ % 16;
@@ -86,13 +86,13 @@ void loop() {
       inertia = -inertia;
     }
    pos = hires_pos / scale2pixel;
-pos = (pos + 8) % 16;
+
 
     for(i=0; i<16; i++) {
       uint32_t c = 0;
       if(pos == i) c = color; // 4 pixels on...
-      pixels.setPixelColor(    (i+leftOff ) % 16 , c); // First eye
-      pixels.setPixelColor( 16 +(((16-i)+rightOff) % 16) , c); // Second eye (not flipped)
+      pixels.setPixelColor(    NormalizeRingPos(i+leftOff )  , c); // First eye
+      pixels.setPixelColor( 16 +NormalizeRingPos(i+rightOff) , c); // Second eye (not flipped)
     }
     pixels.show();
  
@@ -108,14 +108,24 @@ pos = (pos + 8) % 16;
     
     
     break;
-    
+   
+      case 3: // sequencer
+  // ====================================================== 
+      for(i=0; i<16; i++) {
+      uint32_t c = 0; // turn off non-selected pixels
+      if(pos == i) {c= 0xFFFF00;} // 4 pixels on...
+      pixels.setPixelColor(  NormalizeRingPos(i+leftOff), c); // First eye
+      pixels.setPixelColor(32 - NormalizeRingPos(i+rightOff)  , c); // Second eye (flipped)
+    }
+    pos++;
+    if (pos>15){pos=0;}
     
   }
 
   t = millis();
-  if((t - prevTime) > 80000) {      // Every 8 seconds... change modes
+  if((t - prevTime) > 8000) {      // Every 8 seconds... change modes
     mode++;                        // Next mode
-    if(mode > 2) {                 // End of modes?
+    if(mode > 3) {                 // End of modes?
       mode = 0;                    // Start modes over
     NextColor();
     }
@@ -142,4 +152,11 @@ void FlashRing(){
 void NextColor(){
         color >>= 8;                 // Next color R->G->B
       if(!color) color = 0xFF0000; // Reset to red
+}
+
+uint8_t NormalizeRingPos(uint8_t realPos){
+  
+  while (realPos < 0) { realPos += 16;}
+  while (realPos > 15) { pos -= 16; }  
+  return realPos;
 }
