@@ -8,7 +8,7 @@
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(32, PIN);
 
-uint8_t  mode   = 3, // Current animation effect
+uint8_t  mode   = 2, // Current animation effect
 // "left" is closes to cpu
          leftOff = 7, // Position of spinny eyes
          rightOff = 2,
@@ -33,7 +33,7 @@ int32_t hires_pos = 0, // 100x actual pos so we can fake floats
 void setup() {
   randomSeed(analogRead(0));
   pixels.begin();
-  pixels.setBrightness(10); // 1/3 brightness (85)
+  pixels.setBrightness(05); // 1/3 brightness (85)
   prevTime = millis();
 }
 
@@ -60,7 +60,7 @@ void loop() {
       uint32_t c = 0; // turn off non-selected pixels
       if(((pos + i) & 7) < 2) c = color; // 4 pixels on...
       pixels.setPixelColor(  NormalizeRingPos(i+leftOff), c); // First eye
-      pixels.setPixelColor(32 - NormalizeRingPos(i+rightOff)  , c); // Second eye (flipped)
+      pixels.setPixelColor(16 + NormalizeRingPos(16-i+rightOff)  , c); // Second eye (flipped)
     }
     pixels.show();
     pos = pos++ % 16;
@@ -74,7 +74,8 @@ void loop() {
    // googly
    // ======================================================
  
-    inertia = (inertia -  ((hires_pos /3 ) * friction))  /100;
+    // inertia = (inertia -  ((hires_pos /3 ) * friction))  /100;
+    inertia = ((inertia -  (hires_pos /3 ))*90)/100;
    // if (moment <25) { moment=0;} // stop when close to zero;
    // inertia = moment;
     hires_pos = hires_pos + inertia;
@@ -87,21 +88,22 @@ void loop() {
       hires_pos = system_size + hires_pos;
       inertia = -inertia;
     }
-   pos = hires_pos / scale2pixel;
+    // + 8  to rotate 0 to bottom
+   pos = NormalizeRingPos(8+ (hires_pos / scale2pixel)); 
 
 
     for(i=0; i<16; i++) {
       uint32_t c = 0;
-      if(pos == i) c = color; // 4 pixels on...
+      if(pos == i) c = color; 
       pixels.setPixelColor(    NormalizeRingPos(i+leftOff )  , c); // First eye
       pixels.setPixelColor( 16 +NormalizeRingPos(i+rightOff) , c); // Second eye (not flipped)
     }
     pixels.show();
  
-    delay(30);
+    delay(24);
     
     // randomly add an impulse:
-    if (random(40) == 1){
+    if (random(60) == 1){
       // FlashRing();
      inertia = inertia + random(600)-30;
      // inertia = 300;
