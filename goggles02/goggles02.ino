@@ -9,11 +9,13 @@
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(32, PIN);
 
 uint8_t  mode   = 3, // Current animation effect
+// "left" is closes to cpu
          leftOff = 7, // Position of spinny eyes
          rightOff = 2,
          pos = 8;
 uint8_t  i; // generic index
 
+uint8_t testpos = 0;
 uint32_t color  = 0xFF0000; // Start red
 uint32_t prevTime;
 
@@ -113,13 +115,14 @@ void loop() {
   // ====================================================== 
       for(i=0; i<16; i++) {
       uint32_t c = 0; // turn off non-selected pixels
-      if(pos == i) {c= 0xFFFF00;} // 4 pixels on...
+      if(testpos == i) {c= 0xFFFF00;} // 4 pixels on...
       pixels.setPixelColor(  NormalizeRingPos(i+leftOff), c); // First eye
-      pixels.setPixelColor(32 - NormalizeRingPos(i+rightOff)  , c); // Second eye (flipped)
+      pixels.setPixelColor(16 + NormalizeRingPos(i+rightOff)  , c); // Second eye (flipped)
     }
-    pos++;
-    if (pos>15){pos=0;}
-    
+    testpos++;
+    if (testpos>15){testpos=0;}
+    delay(60);
+    pixels.show();
   }
 
   t = millis();
@@ -157,6 +160,6 @@ void NextColor(){
 uint8_t NormalizeRingPos(uint8_t realPos){
   
   while (realPos < 0) { realPos += 16;}
-  while (realPos > 15) { pos -= 16; }  
+  while (realPos > 15) { realPos -= 16; }  
   return realPos;
 }
