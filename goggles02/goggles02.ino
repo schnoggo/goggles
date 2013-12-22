@@ -21,7 +21,7 @@ uint32_t prevTime;
 
 int32_t hires_pos = 0, // 100x actual pos so we can fake floats
   inertia = 0,
-  moment,
+  moment =0,
   spring_force = 0;
  
   
@@ -29,11 +29,15 @@ int32_t hires_pos = 0, // 100x actual pos so we can fake floats
 #define scale2pixel 100 // scale to 16 pixels (800*2/16)
 #define friction  90 // (100-89)/100
 #define spring_constant 36 // 36/100 = .36
+const byte vFlip[] PROGMEM ={
+  0x8, 0x7, 0x6, 0x5, 0x4, 0x3, 0x2, 0x1, 
+  0x0, 0xF, 0xE, 0xD, 0xC, 0xB, 0xA, 0x9
+};
 
 void setup() {
   randomSeed(analogRead(0));
   pixels.begin();
-  pixels.setBrightness(05); // 1/3 brightness (85)
+  pixels.setBrightness(128); // 1/3 brightness (85)
   prevTime = millis();
 }
 
@@ -80,11 +84,11 @@ void loop() {
    // inertia = moment;
     hires_pos = hires_pos + inertia;
     if (hires_pos >= system_size){
-       FlashRing();
+      // FlashRing();
       hires_pos = -(hires_pos - system_size);
       inertia = -inertia;
     } else if (hires_pos < (-system_size)) {
-       FlashRing();
+     //  FlashRing();
       hires_pos = system_size + hires_pos;
       inertia = -inertia;
     }
@@ -94,7 +98,8 @@ void loop() {
 
     for(i=0; i<16; i++) {
       uint32_t c = 0;
-      if(pos == i) c = color; 
+     // if(pos == i) c = color; 
+      if(RingDistance(pos, i)<2) c = color; 
       pixels.setPixelColor(    NormalizeRingPos(i+leftOff )  , c); // First eye
       pixels.setPixelColor( 16 +NormalizeRingPos(i+rightOff) , c); // Second eye (not flipped)
     }
@@ -165,3 +170,45 @@ uint8_t NormalizeRingPos(uint8_t realPos){
   while (realPos > 15) { realPos -= 16; }  
   return realPos;
 }
+
+uint8_t ReflectVertical(uint8_t ringPos){
+}
+
+uint8_t RingDistance(int8_t pos1, int8_t pos2){
+  // given two points on the NeoPixel Ring, return
+  // unsigned distance between them.
+  int8_t retVal= abs(pos1-pos2);
+  if( retVal>8){retVal = 16-retVal;}
+  return retVal;
+}
+  
+/*
+Left-to-right sweep:
+0: C C
+1: D B
+2: E A
+3: F 9
+4: 0 8
+5: 1 7
+6: 2 6
+7: 3 5
+8: 4 4
+
+Reflect:
+0: 8
+1: 7
+2: 6
+3: 5
+4: 4
+5: 3
+6: 2
+7: 1
+8: 0
+9: F
+A: E
+B: D
+C: C
+D: B
+E: A
+F: 9
+*/
