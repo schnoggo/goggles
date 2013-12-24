@@ -9,6 +9,7 @@
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(32, NEOPIXEL_PIN);
 
 #define SLEEP_BRIGHTNESS 13 // maximum brightness in sleep mode
+#define ANIM_DURATION 12000 // 12 seconds on each effect
 uint8_t  mode   = 2, // Current animation effect
 // "left" is closes to cpu
          leftOff = 7, // Position of spinny eyes
@@ -17,6 +18,9 @@ uint8_t  mode   = 2, // Current animation effect
 uint8_t  i; // generic index
 
 uint8_t seen_button_up = 1; //1:button has been up, 0 waiting for up
+uint8_t last_button_state = 0;
+uint32_t last_button_change = 0;
+#define bounce_window 12 //  milliseconds to count as stable
 uint8_t brightness_mode = 3; //0-5 levels of brightness. 0 = pulse (sleep) mode
 
 uint8_t testpos = 0;
@@ -50,6 +54,7 @@ void setup() {
   pixels.begin();
   pixels.setBrightness(5); // 1/3 brightness (85)
   prevTime = millis();
+  last_button_change = prevTime;
 }
 
 void loop() {
@@ -66,6 +71,7 @@ void loop() {
     pixels.setBrightness(hires_pos);
     SolidRing(color);
     BackgroundDelay(200);
+    if (!hires_pos){BackgroundDelay(800);} // leave it dark for awhile
     
   } else{
     switch(mode) {
@@ -141,6 +147,7 @@ void loop() {
      
         case 3: // larson scanner:
     // ====================================================== 
+    // actually, just a spinner in this version
         for(i=0; i<16; i++) {
         uint32_t c = 0; // turn off non-selected pixels
         if(testpos == i) {c= 0xFFFF00;} // 4 pixels on...
@@ -154,7 +161,7 @@ void loop() {
     }
   
     t = millis();
-    if((t - prevTime) > 8000) {      // Every 8 seconds... change modes
+    if((t - prevTime) > ANIM_DURATION) {      // Every 8 seconds... change modes
       mode++;                        // Next mode
       if(mode > 2) {                 // End of modes?
         mode = 0;                    // Start modes over
@@ -211,25 +218,38 @@ uint8_t RingDistance(int8_t pos1, int8_t pos2){
  
 void BackgroundDelay(unsigned long delay_milliseconds){
   unsigned long now = millis();
+  byte current_button_state = (digitalRead(BUTTON_PIN) == LOW);
   while ((now + delay_milliseconds) > millis()){
     
-    if (digitalRead(BUTTON_PIN) == LOW) {
-      if (seen_button_up){
-        brightness_mode = (brightness_mode+1)%5;
-        seen_button_up = 0; // mark that we've seen this button press
-       // pixels.setBrightness(32*brightness_mode);
-       pixels.setBrightness(pgm_read_byte_near(brightnessValues+brightness_mode));
-       if (!brightness_mode){
-         // we're in sleep mode: initialize for that mode
-         inertia = 1;
-         hires_pos = 0;
-         color = 0x00FFFF;
+     // debounce
+     if (current_button_state == last_button_state){
+       if (now - last_button_change > bounce_window){
+         // stable:
+         if (current_button_state) { // button down
+          if (seen_button_up){ // button is pushed and we've seen it up
+            brightness_mode = (brightness_mode+1)%5;
+            seen_button_up = 0; // mark that we've seen this button press
+           // pixels.setBrightness(32*brightness_mode);
+           pixels.setBrightness(pgm_read_byte_near(brightnessValues+brightness_mode));
+           if (!brightness_mode){
+             // we're in sleep mode: initialize for that mode
+             inertia = 1;
+             hires_pos = 0;
+             color = 0x00FFFF;
+           } // init sleep mode
+          } // seen_button_up
+        } else {
+          seen_button_up = 1; // button is not down
+        }
+         
+         
        }
        
-      }
-    } else {
-      seen_button_up = 1;
-    }
+     } else {
+       // restart stability timer:
+       last_button_state = current_button_state;
+       last_button_change = now;
+     }
          
   } // timing while
 }
