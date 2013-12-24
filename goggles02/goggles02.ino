@@ -25,6 +25,7 @@ uint8_t brightness_mode = 3; //0-5 levels of brightness. 0 = pulse (sleep) mode
 
 uint8_t testpos = 0;
 uint32_t color  = 0xFF0000; // Start red
+uint32_t this_color = 0; // temporaru color "register" so we can reuse the RAM
 uint32_t prevTime;
 
 int32_t hires_pos = 0, // 256x actual pos so we can fake floats
@@ -69,9 +70,17 @@ void loop() {
       inertia = 1;
     }
     pixels.setBrightness(hires_pos);
-    SolidRing(color);
+    
+    for(i=0; i<32; i=i+2){
+      pixels.setPixelColor(i, color);
+      pixels.setPixelColor(i+1, 0);
+      
+    }
+    pixels.show();
+    
+    
     BackgroundDelay(200);
-    if (!hires_pos){BackgroundDelay(800);} // leave it dark for awhile
+    if (!hires_pos){BackgroundDelay(2400);} // leave it dark for awhile
     
   } else{
     switch(mode) {
@@ -92,10 +101,10 @@ void loop() {
      case 1: // Spinny wheels (4 LEDs on at a time)
     // ======================================================
       for(i=0; i<16; i++) {
-        uint32_t c = 0; // turn off non-selected pixels
-        if(((pos + i) & 7) < 2) c = color; // 4 pixels on...
-        pixels.setPixelColor(  NormalizeRingPos(i+leftOff), c); // First eye
-        pixels.setPixelColor(16 + NormalizeRingPos(16-i+rightOff)  , c); // Second eye (flipped)
+        this_color = 0; // turn off non-selected pixels
+        if(((pos + i) & 7) < 2) this_color = color; // 4 pixels on...
+        pixels.setPixelColor(  NormalizeRingPos(i+leftOff), this_color); // First eye
+        pixels.setPixelColor(16 + NormalizeRingPos(16-i+rightOff)  , this_color); // Second eye (flipped)
       }
       pixels.show();
       pos = pos++ % 16;
@@ -126,11 +135,10 @@ void loop() {
   
   
       for(i=0; i<16; i++) {
-        uint32_t c = 0;
-       // if(pos == i) c = color; 
-        if(RingDistance(pos, i)<2) c = color; 
-        pixels.setPixelColor(    NormalizeRingPos(i+leftOff )  , c); // First eye
-        pixels.setPixelColor( 16 +NormalizeRingPos(i+rightOff) , c); // Second eye (not flipped)
+        this_color = 0;
+        if(RingDistance(pos, i)<2) this_color = color; 
+        pixels.setPixelColor(    NormalizeRingPos(i+leftOff )  , this_color); // First eye
+        pixels.setPixelColor( 16 +NormalizeRingPos(i+rightOff) , this_color); // Second eye (not flipped)
       }
       pixels.show();
    
@@ -149,10 +157,10 @@ void loop() {
     // ====================================================== 
     // actually, just a spinner in this version
         for(i=0; i<16; i++) {
-        uint32_t c = 0; // turn off non-selected pixels
-        if(testpos == i) {c= 0xFFFF00;} // 4 pixels on...
-        pixels.setPixelColor(  NormalizeRingPos(i+leftOff), c); // First eye
-        pixels.setPixelColor(16 + NormalizeRingPos(i+rightOff)  , c); // Second eye (flipped)
+        this_color = 0; // turn off non-selected pixels
+        if(testpos == i) {this_color = 0xFFFF00;} // 4 pixels on...
+        pixels.setPixelColor(  NormalizeRingPos(i+leftOff), this_color); // First eye
+        pixels.setPixelColor(16 + NormalizeRingPos(i+rightOff)  , this_color); // Second eye (flipped)
       }
       testpos++;
       if (testpos>15){testpos=0;}
