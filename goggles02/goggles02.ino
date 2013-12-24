@@ -4,9 +4,9 @@
 
 #include <Adafruit_NeoPixel.h>
 
-#define PIN 0
-
-Adafruit_NeoPixel pixels = Adafruit_NeoPixel(32, PIN);
+#define NEOPIXEL_PIN 0
+#define BUTTON_PIN 1
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(32, NEOPIXEL_PIN);
 
 uint8_t  mode   = 2, // Current animation effect
 // "left" is closes to cpu
@@ -25,19 +25,22 @@ int32_t hires_pos = 0, // 100x actual pos so we can fake floats
   spring_force = 0;
  
   
-#define system_size 800
-#define scale2pixel 100 // scale to 16 pixels (800*2/16)
-#define friction  90 // (100-89)/100
-#define spring_constant 36 // 36/100 = .36
+#define system_size 8*256
+#define scale2pixel 256
+#define friction  230 // 90% of 256 = 10% drag
+#define spring_constant 92 // 36% of 256
+#define denom 256 // binary fraction time!
 const byte vFlip[] PROGMEM ={
   0x8, 0x7, 0x6, 0x5, 0x4, 0x3, 0x2, 0x1, 
   0x0, 0xF, 0xE, 0xD, 0xC, 0xB, 0xA, 0x9
 };
 
 void setup() {
-  randomSeed(analogRead(0));
+  pinMode(BUTTON_PIN, INPUT); // make this an input
+  digitalWrite(BUTTON_PIN, HIGH); // ...with a pullup resistor
+  randomSeed(analogRead(0)); // Seed the random number generator with some noise off pin 0
   pixels.begin();
-  pixels.setBrightness(128); // 1/3 brightness (85)
+  pixels.setBrightness(5); // 1/3 brightness (85)
   prevTime = millis();
 }
 
@@ -79,10 +82,8 @@ void loop() {
     case 2: 
    // googly
    // ======================================================
- 
-    // inertia = (inertia -  ((hires_pos /3 ) * friction))  /100;
-    inertia = ((inertia -  (hires_pos /3 ))*90)/100;
-   // if (moment <25) { moment=0;} // stop when close to zero;
+
+    inertia = ((inertia -  (hires_pos /3 )) * friction) /denom;
    // inertia = moment;
     hires_pos = hires_pos + inertia;
     if (hires_pos >= system_size){
@@ -111,10 +112,8 @@ void loop() {
     
     // randomly add an impulse:
     if (random(60) == 1){
-      // FlashRing();
-     inertia = inertia + random(600)-30;
-     // inertia = 300;
-     //  NextColor();
+     inertia = inertia + random(800);
+
     }
     
     
