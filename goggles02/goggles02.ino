@@ -15,6 +15,9 @@ uint8_t  mode   = 2, // Current animation effect
          pos = 8;
 uint8_t  i; // generic index
 
+uint8_t seen_button_up = 1; //1:button has been up, 0 waiting for up
+uint8_t brightness_mode = 0; //0-5 levels of brightness. 0 = pulse (sleep) mode
+
 uint8_t testpos = 0;
 uint32_t color  = 0xFF0000; // Start red
 uint32_t prevTime;
@@ -30,9 +33,13 @@ int32_t hires_pos = 0, // 100x actual pos so we can fake floats
 #define friction  230 // 90% of 256 = 10% drag
 #define spring_constant 92 // 36% of 256
 #define denom 256 // binary fraction time!
-const byte vFlip[] PROGMEM ={
+const uint8_t vFlip[] PROGMEM ={
   0x8, 0x7, 0x6, 0x5, 0x4, 0x3, 0x2, 0x1, 
   0x0, 0xF, 0xE, 0xD, 0xC, 0xB, 0xA, 0x9
+};
+
+const uint8_t brightnessValues[] PROGMEM ={
+  0x00, 0x07, 0x20, 0x40, 0x80, 0xFF 
 };
 
 void setup() {
@@ -56,7 +63,7 @@ void loop() {
    // pixels.setPixelColor(i, color);
    pixels.setPixelColor(i, pixels.Color(SteppedColor(), SteppedColor(), SteppedColor() ));
     pixels.show();
-    delay(10);
+    BackgroundDelay(10);
     pixels.setPixelColor(i, 0);
     
     break;
@@ -73,7 +80,7 @@ void loop() {
     }
     pixels.show();
     pos = pos++ % 16;
-    delay(50);
+    BackgroundDelay(50);
    
     break;
     
@@ -108,7 +115,7 @@ void loop() {
     }
     pixels.show();
  
-    delay(24);
+    BackgroundDelay(24);
     
     // randomly add an impulse:
     if (random(60) == 1){
@@ -129,7 +136,7 @@ void loop() {
     }
     testpos++;
     if (testpos>15){testpos=0;}
-    delay(60);
+    BackgroundDelay(60);
     pixels.show();
   }
 
@@ -156,7 +163,7 @@ void SolidRing(uint32_t c){
 
 void FlashRing(){
   SolidRing(0x222222);
-  delay(100);
+  BackgroundDelay(100);
   SolidRing(0);
 }
 
@@ -182,10 +189,30 @@ uint8_t RingDistance(int8_t pos1, int8_t pos2){
   if( retVal>8){retVal = 16-retVal;}
   return retVal;
 }
+
  uint8_t SteppedColor(){
    // return a non-continuous value for a color axis
    return random(4)*64;
  }
+ 
+void BackgroundDelay(unsigned long delay_milliseconds){
+  unsigned long now = millis();
+  while ((now + delay_milliseconds) > millis()){
+    
+    if (digitalRead(BUTTON_PIN) == LOW) {
+      if (seen_button_up){
+        brightness_mode = (brightness_mode+1)%5;
+        seen_button_up = 0; // mark that we've seen this button press
+       // pixels.setBrightness(32*brightness_mode);
+       pixels.setBrightness(pgm_read_byte_near(brightnessValues+brightness_mode));
+       
+      }
+    } else {
+      seen_button_up = 1;
+    }
+         
+  } // timing while
+}
 /*
 Left-to-right sweep:
 0: C C
