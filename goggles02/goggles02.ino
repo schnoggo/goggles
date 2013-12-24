@@ -50,10 +50,12 @@ void loop() {
    case 0: // Random sparks - just one LED on at a time!
    // ======================================================
     i = random(32);
-    pixels.setPixelColor(i, color);
+   // pixels.setPixelColor(i, color);
+   pixels.setPixelColor(i, pixels.Color(SteppedColor(), SteppedColor(), SteppedColor() ));
     pixels.show();
     delay(10);
     pixels.setPixelColor(i, 0);
+    
     break;
  
  
@@ -181,7 +183,10 @@ uint8_t RingDistance(int8_t pos1, int8_t pos2){
   if( retVal>8){retVal = 16-retVal;}
   return retVal;
 }
-  
+ uint8_t SteppedColor(){
+   // return a non-continuous value for a color axis
+   return random(4)*64;
+ }
 /*
 Left-to-right sweep:
 0: C C
