@@ -8,6 +8,7 @@
 #define BUTTON_PIN 1
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(32, NEOPIXEL_PIN);
 
+#define SLEEP_BRIGHTNESS 13 // maximum brightness in sleep mode
 uint8_t  mode   = 2, // Current animation effect
 // "left" is closes to cpu
          leftOff = 7, // Position of spinny eyes
@@ -16,13 +17,13 @@ uint8_t  mode   = 2, // Current animation effect
 uint8_t  i; // generic index
 
 uint8_t seen_button_up = 1; //1:button has been up, 0 waiting for up
-uint8_t brightness_mode = 0; //0-5 levels of brightness. 0 = pulse (sleep) mode
+uint8_t brightness_mode = 3; //0-5 levels of brightness. 0 = pulse (sleep) mode
 
 uint8_t testpos = 0;
 uint32_t color  = 0xFF0000; // Start red
 uint32_t prevTime;
 
-int32_t hires_pos = 0, // 100x actual pos so we can fake floats
+int32_t hires_pos = 0, // 256x actual pos so we can fake floats
   inertia = 0,
   moment =0,
   spring_force = 0;
@@ -54,101 +55,114 @@ void setup() {
 void loop() {
   
   uint32_t t;
-  
-  switch(mode) {
-
-   case 0: // Random sparks - just one LED on at a time!
-   // ======================================================
-    i = random(32);
-   // pixels.setPixelColor(i, color);
-   pixels.setPixelColor(i, pixels.Color(SteppedColor(), SteppedColor(), SteppedColor() ));
-    pixels.show();
-    BackgroundDelay(10);
-    pixels.setPixelColor(i, 0);
-    
-    break;
- 
- 
- 
-   case 1: // Spinny wheels (8 LEDs on at a time)
-  // ======================================================
-    for(i=0; i<16; i++) {
-      uint32_t c = 0; // turn off non-selected pixels
-      if(((pos + i) & 7) < 2) c = color; // 4 pixels on...
-      pixels.setPixelColor(  NormalizeRingPos(i+leftOff), c); // First eye
-      pixels.setPixelColor(16 + NormalizeRingPos(16-i+rightOff)  , c); // Second eye (flipped)
-    }
-    pixels.show();
-    pos = pos++ % 16;
-    BackgroundDelay(50);
-   
-    break;
-    
-    
-    
-    case 2: 
-   // googly
-   // ======================================================
-
-    inertia = ((inertia -  (hires_pos /3 )) * friction) /denom;
-   // inertia = moment;
+  if (brightness_mode == 0){
     hires_pos = hires_pos + inertia;
-    if (hires_pos >= system_size){
-      // FlashRing();
-      hires_pos = -(hires_pos - system_size);
-      inertia = -inertia;
-    } else if (hires_pos < (-system_size)) {
-     //  FlashRing();
-      hires_pos = system_size + hires_pos;
-      inertia = -inertia;
+    if (hires_pos > SLEEP_BRIGHTNESS){ 
+      inertia = -1;
     }
-    // + 8  to rotate 0 to bottom
-   pos = NormalizeRingPos(8+ (hires_pos / scale2pixel)); 
-
-
-    for(i=0; i<16; i++) {
-      uint32_t c = 0;
-     // if(pos == i) c = color; 
-      if(RingDistance(pos, i)<2) c = color; 
-      pixels.setPixelColor(    NormalizeRingPos(i+leftOff )  , c); // First eye
-      pixels.setPixelColor( 16 +NormalizeRingPos(i+rightOff) , c); // Second eye (not flipped)
+    if (hires_pos < 1){ 
+      inertia = 1;
     }
-    pixels.show();
- 
-    BackgroundDelay(24);
+    pixels.setBrightness(hires_pos);
+    SolidRing(color);
+    BackgroundDelay(200);
     
-    // randomly add an impulse:
-    if (random(60) == 1){
-     inertia = inertia + random(800);
-
-    }
-    
-    
-    break;
+  } else{
+    switch(mode) {
+  
+     case 0: // Random sparks - just one LED on at a time
+     // ======================================================
+      i = random(32);
+     // pixels.setPixelColor(i, color);
+     pixels.setPixelColor(i, pixels.Color(SteppedColor(), SteppedColor(), SteppedColor() ));
+      pixels.show();
+      BackgroundDelay(10);
+      pixels.setPixelColor(i, 0);
+      
+      break;
    
-      case 3: // sequencer
-  // ====================================================== 
+   
+   
+     case 1: // Spinny wheels (4 LEDs on at a time)
+    // ======================================================
       for(i=0; i<16; i++) {
-      uint32_t c = 0; // turn off non-selected pixels
-      if(testpos == i) {c= 0xFFFF00;} // 4 pixels on...
-      pixels.setPixelColor(  NormalizeRingPos(i+leftOff), c); // First eye
-      pixels.setPixelColor(16 + NormalizeRingPos(i+rightOff)  , c); // Second eye (flipped)
+        uint32_t c = 0; // turn off non-selected pixels
+        if(((pos + i) & 7) < 2) c = color; // 4 pixels on...
+        pixels.setPixelColor(  NormalizeRingPos(i+leftOff), c); // First eye
+        pixels.setPixelColor(16 + NormalizeRingPos(16-i+rightOff)  , c); // Second eye (flipped)
+      }
+      pixels.show();
+      pos = pos++ % 16;
+      BackgroundDelay(50);
+     
+      break;
+      
+      
+      
+      case 2: 
+     // googly
+     // ======================================================
+  
+      inertia = ((inertia -  (hires_pos /3 )) * friction) /denom;
+     // inertia = moment;
+      hires_pos = hires_pos + inertia;
+      if (hires_pos >= system_size){
+        // FlashRing();
+        hires_pos = -(hires_pos - system_size);
+        inertia = -inertia;
+      } else if (hires_pos < (-system_size)) {
+       //  FlashRing();
+        hires_pos = system_size + hires_pos;
+        inertia = -inertia;
+      }
+      // + 8  to rotate 0 to bottom
+     pos = NormalizeRingPos(8+ (hires_pos / scale2pixel)); 
+  
+  
+      for(i=0; i<16; i++) {
+        uint32_t c = 0;
+       // if(pos == i) c = color; 
+        if(RingDistance(pos, i)<2) c = color; 
+        pixels.setPixelColor(    NormalizeRingPos(i+leftOff )  , c); // First eye
+        pixels.setPixelColor( 16 +NormalizeRingPos(i+rightOff) , c); // Second eye (not flipped)
+      }
+      pixels.show();
+   
+      BackgroundDelay(24);
+      
+      // randomly add an impulse:
+      if (random(60) == 1){
+       inertia = inertia + random(800);
+  
+      }
+      
+      
+      break;
+     
+        case 3: // larson scanner:
+    // ====================================================== 
+        for(i=0; i<16; i++) {
+        uint32_t c = 0; // turn off non-selected pixels
+        if(testpos == i) {c= 0xFFFF00;} // 4 pixels on...
+        pixels.setPixelColor(  NormalizeRingPos(i+leftOff), c); // First eye
+        pixels.setPixelColor(16 + NormalizeRingPos(i+rightOff)  , c); // Second eye (flipped)
+      }
+      testpos++;
+      if (testpos>15){testpos=0;}
+      BackgroundDelay(60);
+      pixels.show();
     }
-    testpos++;
-    if (testpos>15){testpos=0;}
-    BackgroundDelay(60);
-    pixels.show();
-  }
-
-  t = millis();
-  if((t - prevTime) > 8000) {      // Every 8 seconds... change modes
-    mode++;                        // Next mode
-    if(mode > 3) {                 // End of modes?
-      mode = 0;                    // Start modes over
-    NextColor();
+  
+    t = millis();
+    if((t - prevTime) > 8000) {      // Every 8 seconds... change modes
+      mode++;                        // Next mode
+      if(mode > 2) {                 // End of modes?
+        mode = 0;                    // Start modes over
+      NextColor();
+      }
+      ClearRings();
+      prevTime = t;
     }
-    ClearRings();
-    prevTime = t;
   }
 }
 
@@ -205,6 +219,12 @@ void BackgroundDelay(unsigned long delay_milliseconds){
         seen_button_up = 0; // mark that we've seen this button press
        // pixels.setBrightness(32*brightness_mode);
        pixels.setBrightness(pgm_read_byte_near(brightnessValues+brightness_mode));
+       if (!brightness_mode){
+         // we're in sleep mode: initialize for that mode
+         inertia = 1;
+         hires_pos = 0;
+         color = 0x00FFFF;
+       }
        
       }
     } else {
